@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pineapple Catch - Professional Game</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      background-color: #e0f7fa;
+      margin: 0;
+      padding: 0;
+    }
+
+    #game-container {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #stats {
+      font-size: 18px;
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    #game-area {
+      position: relative;
+      width: 100%;
+      height: 600px;
+      background-color: #ffe082;
+      border: 2px solid #ff6f00;
+      overflow: hidden;
+      margin-top: 20px;
+    }
+
+    #basket {
+      position: absolute;
+      bottom: 10px;
+      width: 80px;
+      height: 50px;
+      background-image: url('basket.png');
+      background-size: cover;
+      left: 260px;
+    }
+
+    #pineapple {
+      position: absolute;
+      width: 50px;
+      height: 70px;
+      background-image: url('pineapple.png');
+      background-size: cover;
+      top: 0;
+    }
+
+    #game-over {
+      display: none;
+      text-align: center;
+      padding: 20px;
+      background-color: rgba(255, 255, 255, 0.9);
+      border: 2px solid #ff6f00;
+      border-radius: 10px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #ff6f00;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #ff8f00;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div id="header">
+      <h1>Pineapple Catch!</h1>
+      <div id="stats">
+        <p>Score: <span id="score">0</span></p>
+        <p>Missed: <span id="missed">0</span></p>
+        <p>Level: <span id="level">1</span></p>
+      </div>
+    </div>
+    <div id="game-area">
+      <div id="basket"></div>
+      <div id="pineapple"></div>
+    </div>
+    <div id="game-over">
+      <h2>Game Over!</h2>
+      <p>Your Final Score: <span id="final-score"></span></p>
+      <button id="restart-btn">Restart Game</button>
+    </div>
+  </div>
+  <audio id="catch-sound" src="catch.mp3" preload="auto"></audio>
+  <audio id="miss-sound" src="miss.mp3" preload="auto"></audio>
+  <script>
+    const gameArea = document.getElementById("game-area");
+    const basket = document.getElementById("basket");
+    const pineapple = document.getElementById("pineapple");
+    const scoreDisplay = document.getElementById("score");
+    const missedDisplay = document.getElementById("missed");
+    const levelDisplay = document.getElementById("level");
+    const gameOverScreen = document.getElementById("game-over");
+    const finalScoreDisplay = document.getElementById("final-score");
+    const restartBtn = document.getElementById("restart-btn");
+    const catchSound = document.getElementById("catch-sound");
+    const missSound = document.getElementById("miss-sound");
+
+    let basketPosition = 260;
+    let pineapplePositionX = Math.random() * 550;
+    let pineapplePositionY = 0;
+    let score = 0;
+    let missed = 0;
+    let level = 1;
+    let pineappleSpeed = 5;
+    let gameInterval;
+
+    document.addEventListener("keydown", moveBasket);
+    restartBtn.addEventListener("click", restartGame);
+
+    function moveBasket(event) {
+      if (event.key === "ArrowLeft" && basketPosition > 0) {
+        basketPosition -= 20;
+      } else if (event.key === "ArrowRight" && basketPosition < 520) {
+        basketPosition += 20;
+      }
+      basket.style.left = basketPosition + "px";
+    }
+
+    function dropPineapple() {
+      pineapplePositionY += pineappleSpeed;
+      pineapple.style.top = pineapplePositionY + "px";
+      pineapple.style.left = pineapplePositionX + "px";
+
+      // Check for collision with basket
+      if (
+        pineapplePositionY >= 530 &&
+        pineapplePositionX >= basketPosition &&
+        pineapplePositionX <= basketPosition + 80
+      ) {
+        score += 10;
+        scoreDisplay.textContent = score;
+        catchSound.play();
+        resetPineapple();
+
+        // Level up for every 100 points
+        if (score % 100 === 0) {
+          levelUp();
+        }
+      } else if (pineapplePositionY > 600) {
+        missed += 1;
+        missedDisplay.textContent = missed;
+        missSound.play();
+        resetPineapple();
+
+        // End game after 5 missed
+        if (missed >= 5) {
+          endGame();
+        }
+      }
+    }
+
+    function resetPineapple() {
+      pineapplePositionY = 0;
+      pineapplePositionX = Math.random() * 550;
+      pineappleSpeed = 5 + level; // Increase speed with level
+    }
+
+    function levelUp() {
+      level += 1;
+      levelDisplay.textContent = level;
+      pineappleSpeed += 1; // Speed increases with level
+    }
+
+    function endGame() {
+      clearInterval(gameInterval);
+      finalScoreDisplay.textContent = score;
+      gameOverScreen.style.display = "block";
+    }
+
+    function restartGame() {
+      score = 0;
+      missed = 0;
+      level = 1;
+      pineappleSpeed = 5;
+      scoreDisplay.textContent = score;
+      missedDisplay.textContent = missed;
+      levelDisplay.textContent = level;
+      pineapplePositionY = 0;
+      pineapplePositionX = Math.random() * 550;
+      gameOverScreen.style.display = "none";
+      startGame();
+    }
+
+    function startGame() {
+      gameInterval = setInterval(dropPineapple, 50);
+    }
+
+    // Start the game initially
+    startGame();
+  </script>
+</body>
+</html>
